@@ -1,135 +1,95 @@
-# Turborepo starter
+# Guildr: AI-Powered Portfolio Coach
 
-This Turborepo starter is maintained by the Turborepo core team.
+Guildr is a personal robo-advisor–style web app that helps individual investors keep their stock, mutual fund, and fixed deposit (FD) portfolios balanced and aligned with their risk profile. It leverages live market context and AI-generated guidance to provide actionable, plain-English rebalancing suggestions—without ever touching your money.
 
-## Using this example
+## Architecture Overview
 
-Run the following command:
+Guildr is built as a modern, microservices-based system with the following key components:
 
-```sh
-npx create-turbo@latest
-```
+- **Frontend:** Next.js web application for user interaction and visualization.
+- **Backend:** Node.js microservices, including:
+  - **Portfolio Service:** Manages user portfolios, holdings, and risk profiles.
+  - **Market Service:** Ingests and normalizes live market data (stocks, mutual funds, interest rates).
+  - **Advice Service:** AI-driven engine that analyzes portfolio drift, concentration risk, and generates ranked rebalancing strategies (conservative, balanced, aggressive) with clear explanations.
+  - **Gateway:** API gateway for routing and authentication.
+- **Database:** PostgreSQL (local development via Docker Compose).
+- **Shared Packages:** TypeScript types, utilities, and UI components for consistency across services.
 
-## What's inside?
+## Key Features
 
-This Turborepo includes the following packages/apps:
+- **Portfolio Ingestion:** Upload and manage your stocks, mutual funds, and FDs in one place.
+- **Live Market Tracking:** Continuously updates portfolio context with real-time market data.
+- **AI-Generated Guidance:** Suggests three ranked rebalancing strategies, each explained in simple language.
+- **Risk Alignment:** Detects drift and concentration risk, ensuring allocations match user risk profiles.
+- **API-First Design:** All functionality exposed via RESTful APIs for extensibility.
+- **Responsible AI:** Advice is educational only—Guildr never executes trades or handles user funds.
 
-### Apps and Packages
+## Local Development
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Prerequisites
+- Node.js (v18+ recommended)
+- pnpm (for monorepo management)
+- Docker (for local Postgres)
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+### Getting Started
 
-### Utilities
+1. **Install dependencies:**
+   ```sh
+   pnpm install
+   ```
 
-This Turborepo has some additional tools already setup for you:
+2. **Start the local Postgres database:**
+   ```sh
+   docker-compose up -d
+   ```
+   - Default credentials: `guildr_user` / `guildr_pass`, database: `guildr_db` (see `docker-compose.yml`)
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+3. **Run all services in development mode:**
+   ```sh
+   pnpm turbo run dev
+   ```
+   - Or run individual services from their respective directories.
 
-### Build
+4. **Access the web app:**
+   - Navigate to `http://localhost:3000` (default Next.js port)
 
-To build all apps and packages, run the following command:
+### Project Structure
 
-```
-cd my-turborepo
+- `apps/`
+  - `web/` – Next.js frontend
+  - `portfolio-service/` – Portfolio management microservice
+  - `market-service/` – Market data microservice
+  - `advice-service/` – AI/Advice microservice
+  - `gateway/` – API gateway
+- `packages/`
+  - `shared-types/` – TypeScript types
+  - `shared-utils/` – Shared utility functions
+  - `ui/` – Reusable UI components
+  - `eslint-config/`, `typescript-config/` – Monorepo configs
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+### Configuration
+- Environment variables for each service should be defined in their respective `.env` files.
+- Database connection strings should match the credentials in `docker-compose.yml`.
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+### Scripts
+- `pnpm turbo run build` – Build all apps and packages
+- `pnpm turbo run lint` – Lint all code
+- `pnpm turbo run dev` – Start all services in dev mode
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## Engineering Highlights
+- **Microservices:** Node.js services for separation of concerns and scalability.
+- **Type Safety:** TypeScript across all layers.
+- **Monorepo:** Managed with pnpm and Turborepo for efficient builds and code sharing.
+- **API-First:** All business logic exposed via APIs.
+- **Explainable AI:** Advice service provides not just recommendations, but rationale for each move.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+## Responsible AI & Security
+- Guildr never executes trades or handles user funds—advice is for educational purposes only.
+- All sensitive data is stored securely in Postgres; no financial credentials are required.
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+## License
+MIT
 
-### Develop
+---
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+For more details, see individual service READMEs or contact the maintainers.

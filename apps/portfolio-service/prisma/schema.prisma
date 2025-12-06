@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+model User {
+  id          String      @id @default(uuid())
+  email       String      @unique
+  name        String?
+  riskProfile String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  portfolios  Portfolio[]
+
+  @@map("users")
+}
+
+model Portfolio {
+  id String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  name         String @default("My Portfolio")
+  baseCurrency String @default("INR")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  holdings Holding[]
+  targets  TargetAllocation?
+
+  @@map("portfolios")
+}
+
+model Holding {
+  id String @id @default(uuid())
+
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
+  assetType String
+  symbol String
+  quantity Decimal
+  buyPrice Decimal @default(0)
+  assetClass String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("holdings")
+}
+
+model TargetAllocation {
+  id String @id @default(uuid())
+  portfolioId String    @unique
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
+  equityPct Decimal @default(0)
+  debtPct   Decimal @default(0)
+  cashPct   Decimal @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("target_allocations")
+}

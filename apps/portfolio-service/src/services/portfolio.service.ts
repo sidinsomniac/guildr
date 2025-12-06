@@ -2,11 +2,8 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 
-// Create a connection pool
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
-
-// Initialize PrismaClient with the adapter
 const prisma = new PrismaClient({ adapter });
 
 interface CreatePortfolioInput {
@@ -63,11 +60,7 @@ export const PortfolioService = {
     });
   },
 
-  /**
-   * CALCULATE PORTFOLIO SNAPSHOT
-   */
   async getPortfolioSummary(portfolioId: string) {
-    // fetch Portfolio, Holdings, and Target Allocation
     const portfolio = await prisma.portfolio.findUnique({
       where: { id: portfolioId },
       include: {
@@ -86,7 +79,6 @@ export const PortfolioService = {
       CASH: 0,
     };
 
-    // loops through holdings (e.g., Reliance, SBI FD) and sums up values
     for (const holding of portfolio.holdings) {
       const qty = Number(holding.quantity);
       const price = Number(holding.buyPrice);
@@ -104,9 +96,9 @@ export const PortfolioService = {
     const stats = {
       totalValue,
       allocation: {
-        EQUITY: totalValue ? (allocation.EQUITY / totalValue) * 100 : 0,
-        DEBT: totalValue ? (allocation.DEBT / totalValue) * 100 : 0,
-        CASH: totalValue ? (allocation.CASH / totalValue) * 100 : 0,
+        EQUITY: totalValue ? Math.round((allocation.EQUITY / totalValue) * 100 * 10000) / 10000 : 0,
+        DEBT: totalValue ? Math.round((allocation.DEBT / totalValue) * 100 * 10000) / 10000 : 0,
+        CASH: totalValue ? Math.round((allocation.CASH / totalValue) * 100 * 10000) / 10000 : 0,
       },
       target: portfolio.targets
         ? {

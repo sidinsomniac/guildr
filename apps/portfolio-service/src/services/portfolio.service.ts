@@ -62,4 +62,61 @@ export const PortfolioService = {
       include: { holdings: true },
     });
   },
+
+  /**
+   * CALCULATE PORTFOLIO SNAPSHOT
+   */
+  async getPortfolioSummary(portfolioId: string) {
+    // fetch Portfolio, Holdings, and Target Allocation
+    const portfolio = await prisma.portfolio.findUnique({
+      where: { id: portfolioId },
+      include: {
+        holdings: true,
+        targets: true,
+      },
+    });
+    
+    console.log("Fetched portfolio:", portfolio); 
+    if (!portfolio) throw new Error("Portfolio not found");
+
+    let totalValue = 0;
+    const allocation = {
+      EQUITY: 0,
+      DEBT: 0,
+      CASH: 0,
+    };
+
+    // loops through holdings (e.g., Reliance, SBI FD) and sums up values
+    for (const holding of portfolio.holdings) {
+      const qty = Number(holding.quantity);
+      const price = Number(holding.buyPrice);
+      const currentValue = qty * price;
+
+      totalValue += currentValue;
+
+      const type = holding.assetClass as keyof typeof allocation;
+      if (allocation[type] !== undefined) {
+        allocation[type] += currentValue;
+      }
+    }
+
+    // calculate Percentages
+    const stats = {
+      totalValue,
+      allocation: {
+        EQUITY: totalValue ? (allocation.EQUITY / totalValue) * 100 : 0,
+        DEBT: totalValue ? (allocation.DEBT / totalValue) * 100 : 0,
+        CASH: totalValue ? (allocation.CASH / totalValue) * 100 : 0,
+      },
+      target: portfolio.targets
+        ? {
+            EQUITY: Number(portfolio.targets.equityPct),
+            DEBT: Number(portfolio.targets.debtPct),
+            CASH: Number(portfolio.targets.cashPct),
+          }
+        : null,
+    };
+
+    return stats;
+  },
 };

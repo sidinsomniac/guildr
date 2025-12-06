@@ -43,4 +43,34 @@ describe('PortfolioService', () => {
     expect(portfolio?.holdings).toBeInstanceOf(Array);
     expect(PortfolioService.getPortfolio).toHaveBeenCalledWith('portfolio-1');
   });
+
+  it('should get portfolio summary with allocation stats', async () => {
+    const mockSummary = {
+      totalValue: 100000,
+      allocation: {
+        EQUITY: 60,
+        DEBT: 30,
+        CASH: 10,
+      },
+      target: {
+        EQUITY: 70,
+        DEBT: 20,
+        CASH: 10,
+      },
+    };
+    (PortfolioService.getPortfolioSummary as jest.Mock).mockResolvedValue(mockSummary);
+
+    const summary = await PortfolioService.getPortfolioSummary('portfolio-1');
+    expect(summary).toEqual(mockSummary);
+    expect(summary.allocation.EQUITY).toBe(60);
+    expect(summary.allocation.DEBT).toBe(30);
+    expect(summary.allocation.CASH).toBe(10);
+    expect(PortfolioService.getPortfolioSummary).toHaveBeenCalledWith('portfolio-1');
+  });
+
+  it('should handle portfolio not found error in summary', async () => {
+    (PortfolioService.getPortfolioSummary as jest.Mock).mockRejectedValue(new Error('Portfolio not found'));
+
+    await expect(PortfolioService.getPortfolioSummary('non-existent-id')).rejects.toThrow('Portfolio not found');
+  });
 });

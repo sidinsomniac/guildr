@@ -44,4 +44,42 @@ describe('API Routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty('id');
   });
+
+  it('GET /api/v1/portfolios/:id/summary should get portfolio summary', async () => {
+    const mockSummary = {
+      totalValue: 100000,
+      allocation: { EQUITY: 60, DEBT: 30, CASH: 10 },
+      target: { EQUITY: 70, DEBT: 20, CASH: 10 },
+    };
+    (PortfolioService.getPortfolioSummary as jest.Mock).mockResolvedValue(mockSummary);
+
+    const res = await request(app).get('/api/v1/portfolios/portfolio-1/summary');
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('allocation');
+    expect(res.body).toHaveProperty('totalValue');
+  });
+
+  it('POST /api/v1/holdings/bulk should add holdings with validation', async () => {
+    const mockResult = { count: 1 };
+    (PortfolioService.addHoldings as jest.Mock).mockResolvedValue(mockResult);
+
+    const res = await request(app)
+      .post('/api/v1/holdings/bulk')
+      .send({
+        portfolioId: '550e8400-e29b-41d4-a716-446655440000',
+        holdings: [{ assetType: 'STOCK', symbol: 'AAPL', quantity: 10, buyPrice: 150, assetClass: 'EQUITY' }],
+      });
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('message', 'Holdings added');
+  });
+
+  it('POST /api/v1/holdings/bulk should return 400 for invalid data', async () => {
+    const res = await request(app)
+      .post('/api/v1/holdings/bulk')
+      .send({
+        portfolioId: 'invalid-uuid',
+        holdings: [{ assetType: 'INVALID', symbol: 'TEST', quantity: -5, buyPrice: 100, assetClass: 'EQUITY' }],
+      });
+    expect(res.statusCode).toBe(400);
+  });
 });

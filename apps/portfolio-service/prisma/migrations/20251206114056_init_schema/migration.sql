@@ -15,7 +15,7 @@ CREATE TABLE "portfolios" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL DEFAULT 'My Portfolio',
-    "baseCurrency" TEXT NOT NULL DEFAULT 'USD',
+    "baseCurrency" TEXT NOT NULL DEFAULT 'INR',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -28,8 +28,8 @@ CREATE TABLE "holdings" (
     "portfolioId" TEXT NOT NULL,
     "assetType" TEXT NOT NULL,
     "symbol" TEXT NOT NULL,
-    "quantity" DECIMAL(65,30) NOT NULL,
-    "buyPrice" DECIMAL(65,30) NOT NULL DEFAULT 0,
+    "quantity" DECIMAL(12,4) NOT NULL,
+    "buyPrice" DECIMAL(12,4) NOT NULL,
     "assetClass" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -41,9 +41,9 @@ CREATE TABLE "holdings" (
 CREATE TABLE "target_allocations" (
     "id" TEXT NOT NULL,
     "portfolioId" TEXT NOT NULL,
-    "equityPct" DECIMAL(65,30) NOT NULL DEFAULT 0,
-    "debtPct" DECIMAL(65,30) NOT NULL DEFAULT 0,
-    "cashPct" DECIMAL(65,30) NOT NULL DEFAULT 0,
+    "equityPct" DECIMAL(12,4) NOT NULL,
+    "debtPct" DECIMAL(12,4) NOT NULL,
+    "cashPct" DECIMAL(12,4) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

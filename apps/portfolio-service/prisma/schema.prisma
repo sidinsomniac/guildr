@@ -40,8 +40,8 @@ model Holding {
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
   assetType String
   symbol String
-  quantity Decimal
-  buyPrice Decimal @default(0)
+  quantity Decimal @db.Decimal(12, 4)
+  buyPrice Decimal @db.Decimal(12, 4)
   assetClass String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -53,9 +53,9 @@ model TargetAllocation {
   id String @id @default(uuid())
   portfolioId String    @unique
   portfolio   Portfolio @relation(fields: [portfolioId], references: [id])
-  equityPct Decimal @default(0)
-  debtPct   Decimal @default(0)
-  cashPct   Decimal @default(0)
+  equityPct Decimal @db.Decimal(12, 4)
+  debtPct   Decimal @db.Decimal(12, 4)
+  cashPct   Decimal @db.Decimal(12, 4)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

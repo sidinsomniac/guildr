@@ -29,6 +29,7 @@ app.post("/api/v1/prices", (req: Request, res: Response) => {
   res.json(responseData);
 });
 
+
 app.get("/api/v1/market-summary", (req, res) => {
   res.json({
     indices: {

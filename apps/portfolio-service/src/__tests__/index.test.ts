@@ -1,6 +1,5 @@
 describe('Index - Health Check', () => {
   it('should have health endpoint definition', () => {
-    // This test verifies that the health check is properly defined
     const healthResponse = { status: 'UP', service: 'portfolio-service' };
     expect(healthResponse.status).toBe('UP');
     expect(healthResponse.service).toBe('portfolio-service');

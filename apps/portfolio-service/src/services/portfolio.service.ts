@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
+import { MarketProxy } from "./market.proxy";
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -63,42 +64,57 @@ export const PortfolioService = {
   async getPortfolioSummary(portfolioId: string) {
     const portfolio = await prisma.portfolio.findUnique({
       where: { id: portfolioId },
-      include: {
-        holdings: true,
-        targets: true,
-      },
+      include: { holdings: true, targets: true },
     });
-    
-    console.log("Fetched portfolio:", portfolio); 
+
     if (!portfolio) throw new Error("Portfolio not found");
 
-    let totalValue = 0;
-    const allocation = {
-      EQUITY: 0,
-      DEBT: 0,
-      CASH: 0,
-    };
+    const symbols = Array.from(
+      new Set(portfolio.holdings.map((h) => h.symbol))
+    );
+
+    const livePrices = await MarketProxy.getLivePrices(symbols);
+
+    let totalCurrentValue = 0;
+    let totalInvestedValue = 0;
+    const allocation = { EQUITY: 0, DEBT: 0, CASH: 0 };
 
     for (const holding of portfolio.holdings) {
       const qty = Number(holding.quantity);
-      const price = Number(holding.buyPrice);
-      const currentValue = qty * price;
+      const buyPrice = Number(holding.buyPrice);
 
-      totalValue += currentValue;
+      const marketPrice = livePrices[holding.symbol] || buyPrice;
+
+      const currentVal = qty * marketPrice;
+      const investedVal = qty * buyPrice;
+
+      totalCurrentValue += currentVal;
+      totalInvestedValue += investedVal;
 
       const type = holding.assetClass as keyof typeof allocation;
       if (allocation[type] !== undefined) {
-        allocation[type] += currentValue;
+        allocation[type] += currentVal;
       }
     }
 
-    // calculate Percentages
-    const stats = {
-      totalValue,
+    const totalGainLoss = totalCurrentValue - totalInvestedValue;
+    const totalGainLossPct =
+      totalInvestedValue > 0 ? (totalGainLoss / totalInvestedValue) * 100 : 0;
+
+    return {
+      totalValue: totalCurrentValue,
+      totalGainLoss,
+      totalGainLossPct: Number(totalGainLossPct.toFixed(2)),
       allocation: {
-        EQUITY: totalValue ? Math.round((allocation.EQUITY / totalValue) * 100 * 10000) / 10000 : 0,
-        DEBT: totalValue ? Math.round((allocation.DEBT / totalValue) * 100 * 10000) / 10000 : 0,
-        CASH: totalValue ? Math.round((allocation.CASH / totalValue) * 100 * 10000) / 10000 : 0,
+        EQUITY: totalCurrentValue
+          ? (allocation.EQUITY / totalCurrentValue) * 100
+          : 0,
+        DEBT: totalCurrentValue
+          ? (allocation.DEBT / totalCurrentValue) * 100
+          : 0,
+        CASH: totalCurrentValue
+          ? (allocation.CASH / totalCurrentValue) * 100
+          : 0,
       },
       target: portfolio.targets
         ? {
@@ -108,7 +124,5 @@ export const PortfolioService = {
           }
         : null,
     };
-
-    return stats;
   },
 };

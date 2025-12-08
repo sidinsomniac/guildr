@@ -52,7 +52,9 @@ export const PortfolioController = {
         ...holding,
         portfolioId: validatedData.portfolioId,
       }));
-      const result = await PortfolioService.addHoldings(holdingsWithPortfolioId);
+      const result = await PortfolioService.addHoldings(
+        holdingsWithPortfolioId
+      );
 
       res.status(201).json({ message: "Holdings added", count: result.count });
     } catch (error) {
@@ -73,6 +75,19 @@ export const PortfolioController = {
       res.json(portfolio);
     } catch (error) {
       res.status(500).json({ error: "Error fetching portfolio" });
+    }
+  },
+
+  // GET /portfolios/:id/summary
+  async getPortfolioSummary(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      console.log("Calculating summary for portfolio ID:", id);
+      const summary = await PortfolioService.getPortfolioSummary(id);
+      res.json(summary);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to calculate summary" });
     }
   },
 };

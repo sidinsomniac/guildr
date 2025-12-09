@@ -9,6 +9,15 @@ import { DashboardController } from '../controller/dashboard.controller';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
+jest.mock('../config/env', () => ({
+  config: {
+    PORTFOLIO_SERVICE_URL: 'http://localhost:3001/api/v1',
+    MARKET_SERVICE_URL: 'http://localhost:3002/api/v1',
+    NODE_ENV: 'test',
+    PORT: 3000,
+  },
+}));
+
 // Create app instance for testing
 const createApp = () => {
   const app = express();

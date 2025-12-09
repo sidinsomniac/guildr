@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
 import axios from "axios";
+import { config } from "../config/env";
 
-const PORTFOLIO_SERVICE = process.env.PORTFOLIO_SERVICE_URL || "http://localhost:3001/api/v1";
-const MARKET_SERVICE = process.env.MARKET_SERVICE_URL || "http://localhost:3002/api/v1";
+const PORTFOLIO_SERVICE = config.PORTFOLIO_SERVICE_URL;
+const MARKET_SERVICE = config.MARKET_SERVICE_URL;
 
 export const DashboardController = {
   async getDashboard(req: Request, res: Response) {
@@ -29,7 +30,7 @@ export const DashboardController = {
       res.status(500).json({
         error: "Failed to load dashboard",
         message: error.message || "Unknown error",
-        code: "DASHBOARD_LOAD_ERROR"
+        code: "DASHBOARD_LOAD_ERROR",
       });
     }
   },
@@ -55,6 +56,32 @@ export const DashboardController = {
         return res.status(error.response.status).json(error.response.data);
       }
       res.status(500).json({ error: "Failed to create user" });
+    }
+  },
+  async createPortfolio(req: Request, res: Response) {
+    try {
+      const response = await axios.post(
+        `${PORTFOLIO_SERVICE}/portfolios`,
+        req.body
+      );
+      res.status(response.status).json(response.data);
+    } catch (error: any) {
+      res
+        .status(error.response?.status || 500)
+        .json(error.response?.data || { error: "Proxy Error" });
+    }
+  },
+  async addHoldings(req: Request, res: Response) {
+    try {
+      const response = await axios.post(
+        `${PORTFOLIO_SERVICE}/holdings/bulk`,
+        req.body
+      );
+      res.status(response.status).json(response.data);
+    } catch (error: any) {
+      res
+        .status(error.response?.status || 500)
+        .json(error.response?.data || { error: "Proxy Error" });
     }
   },
 };

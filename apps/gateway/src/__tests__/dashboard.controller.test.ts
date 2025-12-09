@@ -3,7 +3,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import axios from 'axios';
-import { DashboardController } from '../dashboard.controller';
+import { DashboardController } from '../controller/dashboard.controller';
 
 // Mock axios
 jest.mock('axios');
@@ -18,6 +18,7 @@ const createApp = () => {
   app.use(morgan('dev'));
 
   app.get('/api/dashboard/:portfolioId', DashboardController.getDashboard);
+  app.post('/api/users', DashboardController.createUser);
 
   return app;
 };
@@ -212,9 +213,9 @@ describe('Gateway - Dashboard Controller', () => {
       const response = await request(app).get('/api/dashboard/portfolio-123');
 
       expect(response.status).toBe(500);
-      expect(response.body).toEqual({
-        error: 'Failed to load dashboard',
-      });
+      expect(response.body.error).toBe('Failed to load dashboard');
+      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('code', 'DASHBOARD_LOAD_ERROR');
     });
 
     it('should handle timeout errors', async () => {
@@ -224,9 +225,8 @@ describe('Gateway - Dashboard Controller', () => {
       const response = await request(app).get('/api/dashboard/portfolio-123');
 
       expect(response.status).toBe(500);
-      expect(response.body).toEqual({
-        error: 'Failed to load dashboard',
-      });
+      expect(response.body.error).toBe('Failed to load dashboard');
+      expect(response.body.message).toBe('Request timeout');
     });
 
     it('should handle partial failures with 503 status', async () => {
@@ -322,9 +322,9 @@ describe('Gateway - Dashboard Controller', () => {
       const response = await request(app).get('/api/dashboard/portfolio-123');
 
       expect(response.status).toBe(500);
-      expect(response.body).toEqual({
-        error: 'Failed to load dashboard',
-      });
+      expect(response.body.error).toBe('Failed to load dashboard');
+      expect(response.body).toHaveProperty('message');
+      expect(response.body).toHaveProperty('code', 'DASHBOARD_LOAD_ERROR');
     });
     it('should return aggregated data with multiple stocks', async () => {
       const largePortfolioData = {
@@ -366,10 +366,197 @@ describe('Gateway - Dashboard Controller', () => {
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Gateway Aggregation Error:',
-        'Test error message'
+        error
       );
 
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('POST /api/users', () => {
+    const mockUserData = {
+      id: 'user-123',
+      email: 'test@example.com',
+      name: 'Test User',
+      createdAt: new Date().toISOString(),
+    };
+
+    it('should create a user successfully', async () => {
+      mockedAxios.post.mockResolvedValue({ data: mockUserData });
+
+      const response = await request(app)
+        .post('/api/users')
+        .send({ email: 'test@example.com', name: 'Test User' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual(mockUserData);
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        'http://localhost:3001/api/v1/users',
+        { email: 'test@example.com', name: 'Test User' }
+      );
+    });
+
+    it('should return 400 when email is missing', async () => {
+      const response = await request(app)
+        .post('/api/users')
+        .send({ name: 'Test User' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: "Missing 'email' or 'name'" });
+    });
+
+    it('should return 400 when name is missing', async () => {
+      const response = await request(app)
+        .post('/api/users')
+        .send({ email: 'test@example.com' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: "Missing 'email' or 'name'" });
+    });
+
+    it('should return 400 when both email and name are missing', async () => {
+      const response = await request(app)
+        .post('/api/users')
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: "Missing 'email' or 'name'" });
+    });
+
+    it('should handle portfolio service errors', async () => {
+      const error = {
+        response: {
+          status: 400,
+          data: { error: 'Invalid email format' },
+        },
+      };
+      mockedAxios.post.mockRejectedValue(error);
+
+      const response = await request(app)
+        .post('/api/users')
+        .send({ email: 'invalid-email', name: 'Test User' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: 'Invalid email format' });
+    });
+
+    it('should handle portfolio service 500 errors', async () => {
+      const error = {
+        response: {
+          status: 500,
+          data: { error: 'Internal server error' },
+        },
+      };
+      mockedAxios.post.mockRejectedValue(error);
+
+      const response = await request(app)
+        .post('/api/users')
+        .send({ email: 'test@example.com', name: 'Test User' });
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ error: 'Internal server error' });
+    });
+
+    it('should handle network errors gracefully', async () => {
+      const error = new Error('Network error');
+      mockedAxios.post.mockRejectedValue(error);
+
+      const response = await request(app)
+        .post('/api/users')
+        .send({ email: 'test@example.com', name: 'Test User' });
+
+      expect(response.status).toBe(500);
+      expect(response.body).toEqual({ error: 'Failed to create user' });
+    });
+
+    it('should use environment variables for service URLs', async () => {
+      const mockUserData = {
+        id: 'user-123',
+        email: 'test@example.com',
+        name: 'Test User',
+      };
+      
+      mockedAxios.post.mockResolvedValue({ data: mockUserData });
+
+      const response = await request(app)
+        .post('/api/users')
+        .send({ email: 'test@example.com', name: 'Test User' });
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual(mockUserData);
+    });
+
+    it('should log create user errors', async () => {
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const error = new Error('Create User Error');
+      mockedAxios.post.mockRejectedValue(error);
+
+      await request(app)
+        .post('/api/users')
+        .send({ email: 'test@example.com', name: 'Test User' });
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Create User Error:',
+        'Create User Error'
+      );
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should return 201 status for successful user creation', async () => {
+      mockedAxios.post.mockResolvedValue({ data: mockUserData });
+
+      const response = await request(app)
+        .post('/api/users')
+        .send({ email: 'newuser@example.com', name: 'New User' });
+
+      expect(response.status).toBe(201);
+    });
+
+    it('should handle various email formats', async () => {
+      const validEmails = [
+        'test@example.com',
+        'user+tag@domain.co.uk',
+        'john.doe@company.com',
+      ];
+
+      for (const email of validEmails) {
+        jest.clearAllMocks();
+        mockedAxios.post.mockResolvedValue({ data: { ...mockUserData, email } });
+
+        const response = await request(app)
+          .post('/api/users')
+          .send({ email, name: 'Test User' });
+
+        expect(response.status).toBe(201);
+      }
+    });
+
+    it('should handle user names with special characters', async () => {
+      const names = ['José García', 'Jean-Pierre', "O'Brien"];
+
+      for (const name of names) {
+        jest.clearAllMocks();
+        mockedAxios.post.mockResolvedValue({ data: { ...mockUserData, name } });
+
+        const response = await request(app)
+          .post('/api/users')
+          .send({ email: 'test@example.com', name });
+
+        expect(response.status).toBe(201);
+      }
+    });
+
+    it('should call POST to correct portfolio service endpoint', async () => {
+      mockedAxios.post.mockResolvedValue({ data: mockUserData });
+
+      await request(app)
+        .post('/api/users')
+        .send({ email: 'test@example.com', name: 'Test User' });
+
+      const call = mockedAxios.post.mock.calls[0];
+      expect(call[0]).toContain('/users');
+      expect(call[1]).toEqual({ email: 'test@example.com', name: 'Test User' });
     });
   });
 });
